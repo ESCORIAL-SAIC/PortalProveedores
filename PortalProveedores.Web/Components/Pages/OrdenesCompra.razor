@@ -1,0 +1,149 @@
+@page "/ordenes-compra"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits PaginaProveedor
+
+<PageTitle>Portal Proveedores - Ordenes de Compra</PageTitle>
+
+<h1>Ordenes de compra pendientes</h1>
+
+<div class="filtros">
+    <label for="buscar">Buscar:</label>
+    <input id="buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
+    <button @onclick="Recargar" disabled="@Cargando">Buscar</button>
+    <button @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
+</div>
+
+@if (Cargando)
+{
+    <p class="cargando">Cargando…</p>
+}
+else if (ordenes.Count == 0)
+{
+    <p>No hay ordenes de compra pendientes.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th class="acciones"></th>
+                <th class="acciones"></th>
+                <th>Orden Compra</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in ordenes)
+            {
+                <tr>
+                    <td class="acciones">
+                        <button class="toggle" title="Ver items" @onclick="() => Expandir(o)">
+                            @(expandida == o.Id ? "−" : "+")
+                        </button>
+                    </td>
+                    <td class="acciones">
+                        @if (Pdf.NombreValido(o.NumeroDocumento))
+                        {
+                            <a class="descargar" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs">D</a>
+                        }
+                    </td>
+                    <td>@o.Transaccion</td>
+                    <td>@o.NombreProveedor</td>
+                    <td>@o.FechaTransaccion</td>
+                </tr>
+                @if (expandida == o.Id)
+                {
+                    <tr class="items">
+                        <td colspan="5">
+                            @if (cargandoItems)
+                            {
+                                <p class="cargando">Cargando items…</p>
+                            }
+                            else if (items.Count == 0)
+                            {
+                                <p>Sin items pendientes.</p>
+                            }
+                            else
+                            {
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Codigo Producto</th>
+                                            <th>Descripcion Producto</th>
+                                            <th>Cantidad Pendiente</th>
+                                            <th>Fecha Estimada</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var i in items)
+                                        {
+                                            <tr>
+                                                <td>@i.CodigoProducto</td>
+                                                <td>@i.DescripcionProducto</td>
+                                                <td>@i.CantidadPendiente</td>
+                                                <td>@i.FechaEstimada</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrdenCompra> ordenes = [];
+    private List<ItemOrdenCompra> items = [];
+    private string busqueda = string.Empty;
+    private string? expandida;
+    private bool cargandoItems;
+
+    protected override async Task Cargar()
+    {
+        ordenes = await Api.OrdenesCompra(Proveedor, busqueda);
+        expandida = null;
+        items = [];
+    }
+
+    // El RowDataBound de WebForms pedía los items de TODAS las filas al renderizar.
+    // Acá se piden solo al expandir: una llamada en vez de N.
+    private async Task Expandir(OrdenCompra o)
+    {
+        if (expandida == o.Id)
+        {
+            expandida = null;
+            items = [];
+            return;
+        }
+
+        expandida = o.Id;
+        items = [];
+        if (string.IsNullOrEmpty(o.Id))
+            return;
+
+        cargandoItems = true;
+        try
+        {
+            var cargados = await Api.ItemsOrdenCompra(o.Id);
+            // Otra fila pudo abrirse mientras esperábamos la respuesta.
+            if (expandida == o.Id)
+                items = cargados;
+        }
+        finally { cargandoItems = false; }
+    }
+
+    private Task Limpiar()
+    {
+        busqueda = string.Empty;
+        return Recargar();
+    }
+
+    private Task EnterBusca(KeyboardEventArgs e) =>
+        e.Key == "Enter" ? Recargar() : Task.CompletedTask;
+}

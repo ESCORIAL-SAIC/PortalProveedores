@@ -1,0 +1,75 @@
+:root { color-scheme: light dark; }
+
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    font-size: 15px;
+}
+
+.page { max-width: 1400px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .75rem 0;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    margin-bottom: 1.5rem;
+}
+
+.topbar .marca { font-weight: 600; text-decoration: none; color: inherit; }
+
+h1 { font-size: 1.4rem; margin: 0 0 1rem; }
+
+button.link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #0b63c5;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+}
+
+.filtros { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+.login { display: grid; gap: .4rem; max-width: 20rem; }
+.login button { margin-top: .75rem; justify-self: start; }
+
+.menu { list-style: none; padding: 0; display: grid; gap: .75rem; }
+
+.error { color: #b3261e; font-weight: 600; }
+.cargando { opacity: .7; }
+
+table { border-collapse: collapse; width: 100%; }
+
+th, td {
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    padding: .35rem .5rem;
+    text-align: left;
+    white-space: nowrap;
+}
+
+th { background: color-mix(in srgb, currentColor 8%, transparent); font-weight: 600; }
+
+tr.items > td { padding: .75rem 1.5rem; background: color-mix(in srgb, currentColor 4%, transparent); }
+tr.items table { width: auto; }
+
+/* Columnas de acción: angostas, contenido centrado. */
+td.acciones, th.acciones { width: 1%; text-align: center; }
+
+/* El toggle +/- es un botón, no un link: sin subrayado y con área clickeable. */
+button.toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1;
+    padding: .1rem .45rem;
+    color: inherit;
+}
+button.toggle:hover { background: color-mix(in srgb, currentColor 12%, transparent); border-radius: 3px; }
+
+a.descargar { text-decoration: none; font-weight: 600; }
+a.descargar:hover { text-decoration: underline; }

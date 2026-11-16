@@ -1,0 +1,83 @@
+@page "/ordenes-pago"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits PaginaProveedor
+
+<PageTitle>Portal Proveedores - Ordenes de Pago</PageTitle>
+
+<h1>Ordenes de pago</h1>
+
+<div class="filtros">
+    <label for="buscar">Buscar:</label>
+    <input id="buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
+    <button @onclick="Recargar" disabled="@Cargando">Buscar</button>
+    <button @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
+</div>
+
+@if (Cargando)
+{
+    <p class="cargando">Cargando…</p>
+}
+else if (ordenes.Count == 0)
+{
+    <p>No hay ordenes de pago.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>CUIT</th>
+                <th>Orden de Pago</th>
+                <th>Factura</th>
+                <th>Importe</th>
+                <th>Total</th>
+                <th>Moneda</th>
+                <th>Cotizacion</th>
+                <th class="acciones"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in ordenes)
+            {
+                <tr>
+                    <td>@o.Fecha</td>
+                    <td>@o.Proveedor</td>
+                    <td>@o.Cuit</td>
+                    <td>@o.NombreDocumento</td>
+                    <td>@o.Factura</td>
+                    <td>@o.Importe</td>
+                    <td>@o.Total</td>
+                    <td>@o.Moneda</td>
+                    <td>@o.Cotizacion</td>
+                    <td class="acciones">
+                        @* Link normal en vez de @onclick: Blazor no puede devolver un
+                           archivo desde un evento de componente. *@
+                        @if (Pdf.NombreValido(o.NumeroPago))
+                        {
+                            <a class="descargar" href="/descargar/ordenpago/@o.NumeroPago" title="Descargar PDFs">D</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrdenPago> ordenes = [];
+    private string busqueda = string.Empty;
+
+    protected override async Task Cargar() => ordenes = await Api.OrdenesPago(Proveedor, busqueda);
+
+    private Task Limpiar()
+    {
+        busqueda = string.Empty;
+        return Recargar();
+    }
+
+    private Task EnterBusca(KeyboardEventArgs e) =>
+        e.Key == "Enter" ? Recargar() : Task.CompletedTask;
+}
