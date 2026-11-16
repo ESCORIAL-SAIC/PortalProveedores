@@ -99,7 +99,11 @@ app.MapGet("/descargar/{tipo}/{numero}", async (
     // Las carpetas del share llevan las llaves literales: {<uuid>} (igual que Config.cs del WebForms).
     var archivos = Pdf.Buscar(Path.Combine(raiz, $"{{{proveedor}}}"), numero);
     if (archivos.Length == 0)
-        return Results.NotFound();
+        return Results.Content(
+            $"<!doctype html><meta charset=\"utf-8\"><title>Sin documentos</title>" +
+            $"<p>No se encontraron documentos asociados a {System.Net.WebUtility.HtmlEncode(numero)}.</p>" +
+            "<p><a href=\"javascript:history.back()\">Volver</a></p>",
+            "text/html; charset=utf-8", statusCode: StatusCodes.Status404NotFound);
 
     ctx.Response.ContentType = "application/zip";
     ctx.Response.Headers.ContentDisposition = $"attachment; filename=Escorial-{numero}.zip";

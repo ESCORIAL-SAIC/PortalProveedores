@@ -46,7 +46,7 @@ else
                     <td class="acciones">
                         @if (Pdf.NombreValido(o.NumeroDocumento))
                         {
-                            <a class="descargar" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs">D</a>
+                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs">D</a>
                         }
                     </td>
                     <td>@o.Transaccion</td>
