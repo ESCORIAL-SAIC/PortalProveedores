@@ -1,18 +1,38 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <AuthorizeView>
-        <Authorized>
+<AuthorizeView>
+    <Authorized>
+        <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Menú" />
+        <aside class="sidebar">
+            <a href="/" class="logo">
+                <img src="img/logo-escorial.png" alt="Escorial" />
+                <div class="sub">Portal Proveedores</div>
+            </a>
+            @* Enhanced nav no recarga el layout: el onclick cierra el menú en móvil. *@
+            <nav onclick="document.getElementById('nav-toggle').checked = false">
+                <NavLink href="" Match="NavLinkMatch.All"><Icono Nombre="inicio" /> Panel</NavLink>
+                <NavLink href="ordenes-compra"><Icono Nombre="oc" /> Órdenes de compra</NavLink>
+                <NavLink href="facturas-pendientes"><Icono Nombre="factura" /> Facturas pendientes</NavLink>
+                <NavLink href="ordenes-pago"><Icono Nombre="pago" /> Órdenes de pago</NavLink>
+            </nav>
+        </aside>
+        <label for="nav-toggle" class="backdrop"></label>
+        <div class="contenido">
             <header class="topbar">
-                <a href="/" class="marca">Escorial &mdash; Portal Proveedores</a>
+                <label for="nav-toggle" class="hamburguesa" title="Menú"><Icono Nombre="menu" /></label>
+                <span class="espacio"></span>
+                <span class="usuario"><Icono Nombre="usuario" /> @context.User.Identity?.Name</span>
                 <form method="post" action="/auth/logout">
                     <AntiforgeryToken />
-                    <button type="submit" class="link">Salir</button>
+                    <button type="submit" class="link"><Icono Nombre="salir" /> Salir</button>
                 </form>
             </header>
-        </Authorized>
-    </AuthorizeView>
-    <main>
-        @Body
-    </main>
-</div>
+            <main>@Body</main>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div class="solo">
+            <main>@Body</main>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>

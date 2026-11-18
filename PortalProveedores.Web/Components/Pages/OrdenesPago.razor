@@ -1,83 +1,156 @@
 @page "/ordenes-pago"
 @attribute [Authorize]
-@rendermode InteractiveServer
+@rendermode Modos.SinPrerender
 @inherits PaginaProveedor
 
 <PageTitle>Portal Proveedores - Ordenes de Pago</PageTitle>
 
-<h1>Ordenes de pago</h1>
+<h1>Órdenes de pago</h1>
 
 <div class="filtros">
-    <label for="buscar">Buscar:</label>
-    <input id="buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
-    <button @onclick="Recargar" disabled="@Cargando">Buscar</button>
-    <button @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
+    <input id="buscar" placeholder="Buscar…" aria-label="Buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
+    <label for="desde">Desde</label>
+    <input id="desde" type="date" @bind="desde" />
+    <label for="hasta">Hasta</label>
+    <input id="hasta" type="date" @bind="hasta" />
+    <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
+    <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
 </div>
 
-@if (Cargando)
+@if (Cargando && grupos.Count == 0)
 {
-    <p class="cargando">Cargando…</p>
+    <EsqueletoTabla />
 }
-else if (ordenes.Count == 0)
+else if (grupos.Count == 0)
 {
-    <p>No hay ordenes de pago.</p>
+    <p class="vacio">No hay órdenes de pago.</p>
 }
 else
 {
+    <section class="card tabla-wrap @(Cargando ? "recargando" : "")">
     <table>
         <thead>
             <tr>
+                <th class="acciones"></th>
                 <th>Fecha</th>
                 <th>Proveedor</th>
                 <th>CUIT</th>
                 <th>Orden de Pago</th>
-                <th>Factura</th>
-                <th>Importe</th>
-                <th>Total</th>
+                <th>Facturas</th>
+                <th class="num">Total</th>
                 <th>Moneda</th>
-                <th>Cotizacion</th>
+                <th class="num">Cotización</th>
                 <th class="acciones"></th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var o in ordenes)
+            @foreach (var g in grupos)
             {
+                var o = g.Cab;
+                var abierto = abiertos.Contains(g.Clave);
                 <tr>
+                    <td class="acciones">
+                        <button class="toggle" title="Ver facturas" aria-label="Ver facturas" aria-expanded="@abierto" @onclick="() => Alternar(g.Clave)">
+                            <Icono Nombre="@(abierto ? "menos" : "mas")" />
+                        </button>
+                    </td>
                     <td>@o.Fecha</td>
                     <td>@o.Proveedor</td>
                     <td>@o.Cuit</td>
                     <td>@o.NombreDocumento</td>
-                    <td>@o.Factura</td>
-                    <td>@o.Importe</td>
-                    <td>@o.Total</td>
+                    <td>@g.Filas.Count @(g.Filas.Count == 1 ? "factura" : "facturas")</td>
+                    <td class="num">@o.Total</td>
                     <td>@o.Moneda</td>
-                    <td>@o.Cotizacion</td>
+                    <td class="num">@o.Cotizacion</td>
                     <td class="acciones">
                         @* Link normal en vez de @onclick: Blazor no puede devolver un
                            archivo desde un evento de componente. *@
                         @if (Pdf.NombreValido(o.NumeroPago))
                         {
-                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordenpago/@o.NumeroPago" title="Descargar PDFs">D</a>
+                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordenpago/@o.NumeroPago" title="Descargar PDFs" aria-label="Descargar PDFs"><Icono Nombre="descargar" /></a>
                         }
                     </td>
                 </tr>
+                @if (abierto)
+                {
+                    <tr class="items">
+                        <td colspan="10">
+                            <table>
+                                <thead>
+                                    <tr><th>Factura</th><th class="num">Importe</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var f in g.Filas)
+                                    {
+                                        <tr>
+                                            <td>@f.Factura</td>
+                                            <td class="num">@f.Importe</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                }
             }
         </tbody>
     </table>
+    <Paginador Pagina="pagina" Tamano="Tamano" Total="total" Singular="factura pagada" Plural="facturas pagadas" Deshabilitado="Cargando" OnCambio="IrAPagina" />
+    </section>
 }
 
 @code {
+    private const int Tamano = 50;
     private List<OrdenPago> ordenes = [];
+    private List<GrupoPago> grupos = [];
+    private readonly HashSet<string> abiertos = [];
+    private int total;
+
+    // La API manda una fila por par pago-factura. Se agrupan por número de pago, en el orden en
+    // que llegan (la API desempata por número de pago, así que las filas de un pago vienen juntas).
+    // total y la paginación siguen contando filas: un pago con muchas facturas puede partirse entre páginas.
+    private sealed record GrupoPago(string Clave, OrdenPago Cab, List<OrdenPago> Filas);
     private string busqueda = string.Empty;
 
-    protected override async Task Cargar() => ordenes = await Api.OrdenesPago(Proveedor, busqueda);
+    protected override async Task Cargar()
+    {
+        var r = await Api.OrdenesPago(Proveedor, new Consulta(busqueda, pagina, Tamano, Fecha(desde), Fecha(hasta)));
+        (ordenes, total) = (r.Items, r.Total);
+        abiertos.Clear();
+        // Una fila sin número de pago no se agrupa con otras sin número.
+        grupos = ordenes
+            .Select((o, i) => (Clave: string.IsNullOrEmpty(o.NumeroPago) ? $"#{i}" : o.NumeroPago, Fila: o))
+            .GroupBy(x => x.Clave)
+            .Select(g => new GrupoPago(g.Key, g.First().Fila, g.Select(x => x.Fila).ToList()))
+            .ToList();
+    }
+
+    private void Alternar(string clave)
+    {
+        if (!abiertos.Remove(clave)) abiertos.Add(clave);
+    }
+
+    private static string? Fecha(DateOnly? d) => d?.ToString("yyyy-MM-dd");
+
+    private Task Buscar()
+    {
+        pagina = 1;
+        return Recargar();
+    }
+
+    private Task IrAPagina(int p)
+    {
+        pagina = p;
+        return Recargar();
+    }
 
     private Task Limpiar()
     {
         busqueda = string.Empty;
-        return Recargar();
+        desde = hasta = null;
+        return Buscar();
     }
 
     private Task EnterBusca(KeyboardEventArgs e) =>
-        e.Key == "Enter" ? Recargar() : Task.CompletedTask;
+        e.Key == "Enter" ? Buscar() : Task.CompletedTask;
 }
