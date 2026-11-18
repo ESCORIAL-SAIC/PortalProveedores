@@ -3,16 +3,14 @@
 @rendermode Modos.SinPrerender
 @inherits PaginaProveedor
 
-<PageTitle>Portal Proveedores - Ordenes de Pago</PageTitle>
+<PageTitle>Portal Proveedores - Órdenes de Pago</PageTitle>
 
 <h1>Órdenes de pago</h1>
 
 <div class="filtros">
-    <input id="buscar" placeholder="Buscar…" aria-label="Buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
-    <label for="desde">Desde</label>
-    <input id="desde" type="date" @bind="desde" />
-    <label for="hasta">Hasta</label>
-    <input id="hasta" type="date" @bind="hasta" />
+    <div class="campo grow"><label for="buscar">Buscar</label><input id="buscar" placeholder="Buscar…" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" /></div>
+    <div class="campo"><label for="desde">Desde</label><input id="desde" type="date" @bind="desde" /></div>
+    <div class="campo"><label for="hasta">Hasta</label><input id="hasta" type="date" @bind="hasta" /></div>
     <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
     <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
 </div>
@@ -23,7 +21,19 @@
 }
 else if (grupos.Count == 0)
 {
-    <p class="vacio">No hay órdenes de pago.</p>
+    @if (!string.IsNullOrEmpty(busqueda) || desde is not null || hasta is not null)
+    {
+        <div class="card vacio-d">
+            <Icono Nombre="buscar" />
+            <p class="t">Ninguna orden de pago coincide con los filtros</p>
+            <p>Probá con otro rango de fechas o quitá los filtros.</p>
+            <button class="sec" @onclick="Limpiar">Limpiar filtros</button>
+        </div>
+    }
+    else
+    {
+        <p class="vacio">No hay órdenes de pago.</p>
+    }
 }
 else
 {
@@ -48,7 +58,7 @@ else
             {
                 var o = g.Cab;
                 var abierto = abiertos.Contains(g.Clave);
-                <tr>
+                <tr class="@(abierto ? "abierta" : null)">
                     <td class="acciones">
                         <button class="toggle" title="Ver facturas" aria-label="Ver facturas" aria-expanded="@abierto" @onclick="() => Alternar(g.Clave)">
                             <Icono Nombre="@(abierto ? "menos" : "mas")" />
@@ -57,17 +67,17 @@ else
                     <td>@o.Fecha</td>
                     <td>@o.Proveedor</td>
                     <td>@o.Cuit</td>
-                    <td>@o.NombreDocumento</td>
-                    <td>@g.Filas.Count @(g.Filas.Count == 1 ? "factura" : "facturas")</td>
+                    <td class="id">@o.NombreDocumento</td>
+                    <td class="aux">@g.Filas.Count @(g.Filas.Count == 1 ? "factura" : "facturas")</td>
                     <td class="num">@o.Total</td>
-                    <td>@o.Moneda</td>
-                    <td class="num">@o.Cotizacion</td>
+                    <td class="aux">@o.Moneda</td>
+                    <td class="num aux">@o.Cotizacion</td>
                     <td class="acciones">
                         @* Link normal en vez de @onclick: Blazor no puede devolver un
                            archivo desde un evento de componente. *@
                         @if (Pdf.NombreValido(o.NumeroPago))
                         {
-                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordenpago/@o.NumeroPago" title="Descargar PDFs" aria-label="Descargar PDFs"><Icono Nombre="descargar" /></a>
+                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordenpago/@o.NumeroPago" title="Descargar PDFs" aria-label="Descargar PDFs de @o.NumeroPago"><Icono Nombre="descargar" /></a>
                         }
                     </td>
                 </tr>

@@ -8,10 +8,8 @@
 <h1>Facturas pendientes</h1>
 
 <div class="filtros">
-    <label for="desde">Vence desde</label>
-    <input id="desde" type="date" @bind="desde" />
-    <label for="hasta">Vence hasta</label>
-    <input id="hasta" type="date" @bind="hasta" />
+    <div class="campo"><label for="desde">Vence desde</label><input id="desde" type="date" @bind="desde" /></div>
+    <div class="campo"><label for="hasta">Vence hasta</label><input id="hasta" type="date" @bind="hasta" /></div>
     <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
     <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
 </div>
@@ -22,7 +20,19 @@
 }
 else if (facturas.Count == 0)
 {
-    <p class="vacio">No hay facturas pendientes.</p>
+    @if (desde is not null || hasta is not null)
+    {
+        <div class="card vacio-d">
+            <Icono Nombre="buscar" />
+            <p class="t">Ninguna factura coincide con los filtros</p>
+            <p>Probá con otro rango de fechas o quitá los filtros.</p>
+            <button class="sec" @onclick="Limpiar">Limpiar filtros</button>
+        </div>
+    }
+    else
+    {
+        <p class="vacio">No hay facturas pendientes.</p>
+    }
 }
 else
 {
@@ -47,19 +57,20 @@ else
         <tbody>
             @foreach (var f in facturas)
             {
-                <tr>
+                var (c, t) = Resumen.Estado(Resumen.Dias(f.FechaVencimiento, hoy));
+                <tr class="@c">
                     <td>@f.FechaFactura</td>
-                    <td>@f.NumeroFactura</td>
-                    <td>@f.TipoTransaccion</td>
+                    <td class="id">@f.NumeroFactura</td>
+                    <td class="aux">@f.TipoTransaccion</td>
                     <td>@f.Proveedor</td>
-                    <td>@f.Moneda</td>
+                    <td class="aux">@f.Moneda</td>
                     <td class="num">@f.Total</td>
                     <td class="num">@f.Saldo</td>
                     <td>@f.FechaVencimiento</td>
-                    <td>@{ var (c, t) = Resumen.Estado(Resumen.Dias(f.FechaVencimiento, hoy)); }@if (t != "") {<span class="badge @c">@t</span>}</td>
+                    <td>@if (t != "") {<span class="badge @c">@t</span>}</td>
                     <td class="num">@f.SaldoConvertido</td>
-                    <td class="num">@f.Cotizacion</td>
-                    <td>@f.FechaActualizacion</td>
+                    <td class="num aux">@f.Cotizacion</td>
+                    <td class="aux">@f.FechaActualizacion</td>
                 </tr>
             }
         </tbody>

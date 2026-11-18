@@ -13,7 +13,7 @@
 
     @if (Error is not null)
     {
-        <p class="error">Error en inicio de sesión</p>
+        <p class="aviso-login" role="alert">No pudimos iniciar sesión. Revisá usuario y contraseña; si son correctos, probá de nuevo en unos minutos.</p>
     }
 
     <AntiforgeryToken />
@@ -21,7 +21,10 @@
     <input id="user" name="user" autocomplete="username" required />
 
     <label for="password">Contraseña</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required />
+    <div class="pw">
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <button type="button" class="ver" aria-pressed="false" aria-label="Mostrar contraseña">Mostrar</button>
+    </div>
 
     <button type="submit" data-texto="Ingresar">Ingresar</button>
 </form>
