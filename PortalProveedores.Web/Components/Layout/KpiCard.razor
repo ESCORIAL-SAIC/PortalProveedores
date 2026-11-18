@@ -1,0 +1,20 @@
+<a class="card kpi @Color" href="@Href">
+    <Icono Nombre="@Icon" />
+    <div>
+        <div class="valor">@Valor</div>
+        <div class="titulo">@Titulo</div>
+        @if (Nota is not null)
+        {
+            <div class="nota">@Nota</div>
+        }
+    </div>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public string Titulo { get; set; } = "";
+    [Parameter, EditorRequired] public string Valor { get; set; } = "";
+    [Parameter] public string? Nota { get; set; }
+    [Parameter] public string Icon { get; set; } = "inicio";
+    [Parameter] public string Color { get; set; } = "azul";
+    [Parameter] public string Href { get; set; } = "#";
+}

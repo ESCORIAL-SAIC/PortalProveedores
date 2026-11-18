@@ -1,0 +1,42 @@
+<svg class="icono" viewBox="0 0 24 24" aria-hidden="true">
+    @switch (Nombre)
+    {
+        case "inicio":
+            <path d="M3 11l9-8 9 8M5 10v10h14V10" />
+            break;
+        case "oc":
+            <path d="M6 2h9l5 5v15H6z M15 2v5h5 M9 13h8 M9 17h8" />
+            break;
+        case "factura":
+            <path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2z M9 8h6 M9 12h6" />
+            break;
+        case "pago":
+            <path d="M2 6h20v12H2z M2 10h20 M6 15h4" />
+            break;
+        case "descargar":
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 20h16" />
+            break;
+        case "mas":
+            <path d="M12 5v14M5 12h14" />
+            break;
+        case "menos":
+            <path d="M5 12h14" />
+            break;
+        case "salir":
+            <path d="M9 21H4V3h5 M16 17l5-5-5-5 M21 12H9" />
+            break;
+        case "usuario":
+            <path d="M12 12a4 4 0 100-8 4 4 0 000 8z M4 21a8 8 0 0116 0" />
+            break;
+        case "menu":
+            <path d="M3 6h18M3 12h18M3 18h18" />
+            break;
+        case "alerta":
+            <path d="M12 3l10 18H2z M12 10v5 M12 18v.01" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Nombre { get; set; } = "";
+}

@@ -1,0 +1,166 @@
+@page "/"
+@attribute [Authorize]
+@rendermode Modos.SinPrerender
+@inherits PaginaProveedor
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<PageTitle>Escorial - Portal Proveedores</PageTitle>
+
+<h1>Panel</h1>
+
+@if (Cargando)
+{
+    <div role="status" aria-live="polite">
+        <span class="solo-lectores">Cargando…</span>
+        <div class="kpis">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="card esq esq-kpi"></div>
+            }
+        </div>
+        <div class="graficos">
+            <div class="card"><div class="esq esq-titulo"></div><div class="esq grafico"></div></div>
+            <div class="card"><div class="esq esq-titulo"></div><div class="esq grafico"></div></div>
+        </div>
+    </div>
+    <EsqueletoTabla Filas="5" />
+}
+else if (resumen is null)
+{
+    <p class="error">No se pudo obtener el resumen. Intentá de nuevo en un momento.</p>
+}
+else
+{
+    <div class="kpis">
+        <KpiCard Href="ordenes-compra" Color="azul" Icon="oc" Titulo="OC pendientes"
+                 Valor="@resumen.OcPendientes.ToString()" />
+        <KpiCard Href="facturas-pendientes" Color="verde" Icon="factura" Titulo="Facturas abiertas"
+                 Valor="@resumen.FacturasAbiertas.ToString()" Nota="@("Saldo " + Resumen.Moneda(resumen.SaldoTotal))" />
+        <KpiCard Href="@UrlFacturas(0)" Color="rojo" Icon="alerta" Titulo="Facturas vencidas"
+                 Valor="@resumen.FacturasVencidas.ToString()" />
+        <KpiCard Href="@UrlFacturas(1)" Color="naranja" Icon="alerta" Titulo="Vencen en 7 días"
+                 Valor="@resumen.FacturasPorVencer7.ToString()" />
+    </div>
+
+    <div class="graficos">
+        <section class="card">
+            <h2>Facturas por vencimiento</h2>
+            <div class="grafico"><canvas id="g-venc"></canvas></div>
+        </section>
+        <section class="card">
+            <h2>Órdenes de pago por mes</h2>
+            <div class="grafico"><canvas id="g-pagos"></canvas></div>
+        </section>
+    </div>
+
+    <section class="card">
+        <h2>Alertas</h2>
+        @if (alertas.Count == 0)
+        {
+            <p class="vacio">Sin facturas vencidas ni próximas a vencer.</p>
+        }
+        else
+        {
+            <div class="tabla-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Factura</th><th>Vencimiento</th><th>Estado</th><th class="num">Saldo</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in alertas)
+                        {
+                            var (clase, texto) = Resumen.Estado(a.Dias);
+                            <tr>
+                                <td>@a.Numero</td>
+                                <td>@a.Vence</td>
+                                <td><span class="badge @clase">@texto</span></td>
+                                <td class="num">@a.Saldo</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (totalAlertas > alertas.Count)
+            {
+                <p class="aviso">Se muestran las @alertas.Count más antiguas de @totalAlertas. <a href="facturas-pendientes">Ver todas las facturas</a></p>
+            }
+        }
+    </section>
+}
+
+@code {
+    private const int MaxAlertas = 10;
+    private ResumenApi? resumen;
+    private List<AlertaFactura> alertas = [];
+    private int totalAlertas;
+    protected override bool LeeFiltroDeUrl => false;
+    private bool dibujar, hayGraficos, descartado;
+    private readonly DateOnly hoy = Resumen.Hoy();
+    private DotNetObjectReference<Panel>? yo;
+
+    private string UrlFacturas(int tramo) => "facturas-pendientes?" + Resumen.QueryVencimiento(tramo, hoy);
+
+    // Lo llama charts.js al clickear un segmento de la dona o una barra de pagos.
+    [JSInvokable]
+    public Task Ir(string grafico, int indice) => InvokeAsync(() =>
+    {
+        var url = grafico == "g-venc"
+            ? Resumen.QueryVencimiento(indice, hoy) is { } q ? "facturas-pendientes?" + q : null
+            : Resumen.QueryMes(resumen?.PagosUltimos6Meses.ElementAtOrDefault(indice)?.Mes) is { } m ? "ordenes-pago?" + m : null;
+        if (url is not null) Nav.NavigateTo(url);
+    });
+
+    protected override async Task Cargar()
+    {
+        var tResumen = Api.Resumen(Proveedor);
+        // Vencidas y por vencer: hasta hoy+7, las más viejas primero. Las sin vencimiento quedan afuera.
+        var tAlertas = Api.FacturasPendientes(Proveedor, new Consulta(
+            Tamano: MaxAlertas, Hasta: hoy.AddDays(7).ToString("yyyy-MM-dd"), Ordenar: "vencimiento", Dir: "asc"));
+        await Task.WhenAll(tResumen, tAlertas);
+
+        resumen = tResumen.Result;
+        alertas = Resumen.Alertas(tAlertas.Result.Items, hoy);
+        totalAlertas = tAlertas.Result.Total;
+        dibujar = resumen is not null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (descartado || !dibujar || Cargando || resumen is null) return;
+        dibujar = false;
+        hayGraficos = true;
+        yo ??= DotNetObjectReference.Create(this);
+
+        var despues = Math.Max(0, resumen.FacturasAbiertas - resumen.FacturasVencidas
+            - resumen.FacturasPorVencer7 - resumen.FacturasSinVencimiento);
+        string[] colores = ["#e3001b", "#eb9233", "#0072b9", "#888888"];
+        await JS.InvokeVoidAsync("portalCharts.dibujar", "g-venc", "doughnut",
+            new[] { "Vencidas", "Vencen en 7 días", "Más adelante", "Sin vencimiento" },
+            new long[] { resumen.FacturasVencidas, resumen.FacturasPorVencer7, despues, resumen.FacturasSinVencimiento },
+            colores, "Facturas", yo,
+            new[] { resumen.FacturasVencidas > 0, resumen.FacturasPorVencer7 > 0, despues > 0, false });
+
+        await JS.InvokeVoidAsync("portalCharts.dibujar", "g-pagos", "bar",
+            resumen.PagosUltimos6Meses.Select(m => Resumen.Mes(m.Mes)).ToArray(),
+            resumen.PagosUltimos6Meses.Select(m => m.Cantidad).ToArray(),
+            "#0072b9", "Órdenes de pago", yo,
+            resumen.PagosUltimos6Meses.Select(m => m.Cantidad > 0).ToArray());
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Durante el prerender no hay circuito: llamar a JS acá tira InvalidOperationException.
+        descartado = true;
+        yo?.Dispose();
+        if (!hayGraficos) return;
+        try
+        {
+            await JS.InvokeVoidAsync("portalCharts.destruir", "g-venc");
+            await JS.InvokeVoidAsync("portalCharts.destruir", "g-pagos");
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

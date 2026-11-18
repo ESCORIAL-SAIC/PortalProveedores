@@ -1,75 +1,324 @@
-:root { color-scheme: light dark; }
+@font-face { font-family: Roboto; font-weight: 400; font-display: swap; src: url(fonts/roboto-400.woff2) format("woff2"); }
+@font-face { font-family: Roboto; font-weight: 500; font-display: swap; src: url(fonts/roboto-500.woff2) format("woff2"); }
+@font-face { font-family: Roboto; font-weight: 700; font-display: swap; src: url(fonts/roboto-700.woff2) format("woff2"); }
+
+:root {
+    color-scheme: light dark;
+    --azul: #0072b9;
+    --azul-osc: #005a93;
+    --naranja: #eb9233;
+    --rojo: #e3001b;
+    --verde: #28a745;
+    --bg: #f2f2f2;
+    --card: #fff;
+    --texto: #222;
+    --suave: #666;
+    --borde: #e6e6e6;
+    --hover: #f6f9fc;
+    --link: #0072b9;
+    --sidebar-w: 15rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #14181d;
+        --card: #1e242b;
+        --texto: #e8eaed;
+        --suave: #9aa4ad;
+        --borde: #2e353d;
+        --hover: #252c34;
+        --link: #5db4ee;
+        --azul-osc: #004a78;
+    }
+}
+
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
-    font-family: system-ui, sans-serif;
+    font-family: Roboto, system-ui, sans-serif;
     font-size: 15px;
+    background: var(--bg);
+    color: var(--texto);
 }
 
-.page { max-width: 1400px; margin: 0 auto; padding: 0 1rem 2rem; }
+a { color: var(--link); }
+h1 { font-size: 1.5rem; font-weight: 500; margin: 0 0 1.25rem; }
+h2 { font-size: 1.05rem; font-weight: 500; margin: 0 0 .75rem; }
+
+/* ---------- Layout ---------- */
+.nav-toggle { position: absolute; opacity: 0; pointer-events: none; }
+
+.sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-w);
+    background: var(--azul);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    z-index: 30;
+    transition: transform .2s;
+}
+
+.sidebar .logo { color: #fff; text-decoration: none; display: block; padding: 1.25rem 1.5rem; border-bottom: 1px solid rgb(255 255 255 / .18); }
+.sidebar .logo img { display: block; width: 8.5rem; height: auto; }
+.sidebar .sub { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; opacity: .8; margin-top: .35rem; }
+
+.sidebar nav { padding: .75rem 0; flex: 1; }
+
+.sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .7rem 1.5rem;
+    color: #fff;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    opacity: .9;
+}
+.sidebar nav a:hover { background: rgb(255 255 255 / .1); opacity: 1; }
+.sidebar nav a.active { background: rgb(255 255 255 / .16); border-left-color: var(--naranja); font-weight: 500; opacity: 1; }
+
+.icono { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.contenido { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
 
 .topbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
-    padding: .75rem 0;
-    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-    margin-bottom: 1.5rem;
+    padding: .7rem 1.5rem;
+    background: var(--card);
+    border-bottom: 1px solid var(--borde);
+}
+.topbar .espacio { flex: 1; }
+.topbar .usuario { color: var(--suave); display: flex; align-items: center; gap: .4rem; }
+.topbar .hamburguesa { display: none; cursor: pointer; padding: .25rem; }
+
+.backdrop { display: none; }
+
+main { padding: 1.5rem; width: 100%; max-width: 90rem; margin: 0 auto; flex: 1; }
+
+/* Sin sesión (login): sin sidebar. */
+.solo { min-height: 100vh; display: grid; place-items: center; padding: 1rem; background: var(--azul); }
+.solo main { padding: 0; max-width: 24rem; }
+
+@media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .contenido { margin-left: 0; }
+    .topbar .hamburguesa { display: block; }
+    .nav-toggle:checked ~ .sidebar { transform: none; box-shadow: 0 0 2rem rgb(0 0 0 / .4); }
+    .nav-toggle:checked ~ .backdrop { display: block; position: fixed; inset: 0; background: rgb(0 0 0 / .4); z-index: 20; }
+    main { padding: 1rem; }
 }
 
-.topbar .marca { font-weight: 600; text-decoration: none; color: inherit; }
+/* ---------- Componentes ---------- */
+.card {
+    background: var(--card);
+    border: 1px solid var(--borde);
+    border-radius: .5rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 2px rgb(0 0 0 / .05);
+}
+.card + .card { margin-top: 1rem; }
+.kpis .card + .card, .graficos .card + .card { margin-top: 0; }
+h1:focus { outline: none; }
 
-h1 { font-size: 1.4rem; margin: 0 0 1rem; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 
-button.link {
-    background: none;
-    border: none;
-    padding: 0;
-    color: #0b63c5;
-    cursor: pointer;
+.kpi { display: flex; align-items: center; gap: 1rem; color: #fff; border: 0; text-decoration: none; }
+.kpi .icono { width: 2.5rem; height: 2.5rem; opacity: .85; }
+.kpi .valor { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.kpi .titulo { font-size: .9rem; }
+.kpi .nota { font-size: .75rem; opacity: .85; margin-top: .2rem; }
+.kpi.azul { background: var(--azul); }
+.kpi.verde { background: var(--verde); }
+.kpi.naranja { background: #d9801c; }
+.kpi.rojo { background: var(--rojo); }
+
+.graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.grafico { position: relative; height: 16rem; }
+
+.aviso { font-size: .8rem; color: var(--suave); margin: 0 0 1rem; }
+
+.badge { display: inline-block; padding: .1rem .55rem; border-radius: 1rem; font-size: .78rem; font-weight: 500; color: #fff; white-space: nowrap; }
+.badge.danger { background: var(--rojo); }
+.badge.warn { background: #d9801c; }
+.badge.ok { background: var(--verde); }
+
+.error { color: var(--rojo); font-weight: 500; }
+.cargando { opacity: .7; }
+.vacio { color: var(--suave); }
+
+/* ---------- Formularios ---------- */
+input {
     font: inherit;
-    text-decoration: underline;
+    padding: .45rem .65rem;
+    border: 1px solid var(--borde);
+    border-radius: .3rem;
+    background: var(--card);
+    color: inherit;
 }
+input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--naranja); outline-offset: 1px; }
+
+button {
+    font: inherit;
+    padding: .45rem .9rem;
+    border: 1px solid var(--azul);
+    border-radius: .3rem;
+    background: var(--azul);
+    color: #fff;
+    cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--azul-osc); }
+button:disabled { opacity: .6; cursor: default; }
+button.sec { background: transparent; color: var(--link); }
+button.sec:hover:not(:disabled) { background: var(--hover); }
+
+button.link { background: none; border: 0; padding: 0; color: var(--link); display: flex; align-items: center; gap: .35rem; }
+button.link:hover { background: none; text-decoration: underline; }
 
 .filtros { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.filtros input { flex: 1; min-width: 12rem; max-width: 24rem; }
 
-.login { display: grid; gap: .4rem; max-width: 20rem; }
-.login button { margin-top: .75rem; justify-self: start; }
+.login { display: grid; gap: .4rem; }
+.login h1 { margin-bottom: .5rem; }
+.login label { font-size: .85rem; color: var(--suave); margin-top: .5rem; }
+.login button { margin-top: 1rem; background: var(--naranja); border-color: var(--naranja); color: #1a1a1a; font-weight: 500; }
+.login button:hover:not(:disabled) { background: #d9801c; }
+.login .logo-login { background: var(--azul); margin: -1rem -1.25rem 1rem; padding: 1.25rem; border-radius: .5rem .5rem 0 0; }
+.login .logo-login img { display: block; width: 9rem; margin: 0 auto; }
 
-.menu { list-style: none; padding: 0; display: grid; gap: .75rem; }
-
-.error { color: #b3261e; font-weight: 600; }
-.cargando { opacity: .7; }
+/* ---------- Tablas ---------- */
+.tabla-wrap { overflow-x: auto; }
 
 table { border-collapse: collapse; width: 100%; }
 
-th, td {
-    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-    padding: .35rem .5rem;
-    text-align: left;
-    white-space: nowrap;
-}
+th, td { padding: .6rem .75rem; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--borde); }
 
-th { background: color-mix(in srgb, currentColor 8%, transparent); font-weight: 600; }
+th { font-size: .8rem; font-weight: 500; text-transform: uppercase; letter-spacing: .03em; color: var(--suave); }
+tbody tr:hover { background: var(--hover); }
 
-tr.items > td { padding: .75rem 1.5rem; background: color-mix(in srgb, currentColor 4%, transparent); }
+tr.items > td { padding: .75rem 1.5rem; background: var(--hover); }
 tr.items table { width: auto; }
+tr.items tbody tr:hover { background: none; }
 
-/* Columnas de acción: angostas, contenido centrado. */
 td.acciones, th.acciones { width: 1%; text-align: center; }
+td.num, th.num { text-align: right; }
 
-/* El toggle +/- es un botón, no un link: sin subrayado y con área clickeable. */
 button.toggle {
     background: none;
-    border: none;
-    cursor: pointer;
-    font: inherit;
-    line-height: 1;
-    padding: .1rem .45rem;
-    color: inherit;
+    border: 0;
+    color: var(--link);
+    padding: .2rem .4rem;
+    line-height: 0;
+    border-radius: .3rem;
 }
-button.toggle:hover { background: color-mix(in srgb, currentColor 12%, transparent); border-radius: 3px; }
+button.toggle:hover:not(:disabled) { background: var(--hover); }
 
-a.descargar { text-decoration: none; font-weight: 600; }
-a.descargar:hover { text-decoration: underline; }
+a.descargar { display: inline-flex; padding: .2rem .4rem; border-radius: .3rem; color: var(--link); }
+a.descargar:hover { background: var(--hover); }
+
+/* ---------- Paginador y fechas ---------- */
+.paginador { display: flex; align-items: center; gap: .75rem; padding: .75rem 0 0; color: var(--suave); flex-wrap: wrap; }
+.paginador .espacio { flex: 1; }
+.filtros label { color: var(--suave); font-size: .85rem; }
+.filtros input[type=date] { flex: none; min-width: 0; }
+
+/* ---------- Carga: skeletons, spinner, reconexión ---------- */
+.solo-lectores { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.esq {
+    background: linear-gradient(90deg, var(--borde) 25%, var(--hover) 37%, var(--borde) 63%);
+    background-size: 400% 100%;
+    animation: esq 1.4s ease infinite;
+    border-radius: .3rem;
+}
+@keyframes esq { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+.esq-fila { height: 1.9rem; margin: .65rem 0; }
+.esq-titulo { height: 1.1rem; width: 12rem; margin-bottom: 1rem; }
+.card.esq-kpi { height: 5.4rem; border: 0; }
+.card.esq-kpi + .card { margin-top: 0; }
+
+.recargando { opacity: .55; pointer-events: none; transition: opacity .15s; }
+
+@keyframes giro { to { transform: rotate(360deg); } }
+button.ocupado::after, .cargando::before {
+    content: "";
+    display: inline-block;
+    width: .9em;
+    height: .9em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: giro .7s linear infinite;
+    vertical-align: -.1em;
+}
+button.ocupado::after { margin-left: .5rem; }
+.cargando::before { margin-right: .5rem; }
+
+@media (prefers-reduced-motion: reduce) {
+    .esq, button.ocupado::after, .cargando::before, .components-rejoining-animation div { animation: none; }
+}
+
+.components-reconnect-first-attempt-visible, .components-reconnect-repeated-attempt-visible,
+.components-reconnect-failed-visible, .components-pause-visible,
+.components-resume-failed-visible, .components-rejoining-animation { display: none; }
+
+#components-reconnect-modal.components-reconnect-show .components-reconnect-first-attempt-visible,
+#components-reconnect-modal.components-reconnect-show .components-rejoining-animation,
+#components-reconnect-modal.components-reconnect-paused .components-pause-visible,
+#components-reconnect-modal.components-reconnect-resume-failed .components-resume-failed-visible,
+#components-reconnect-modal.components-reconnect-retrying,
+#components-reconnect-modal.components-reconnect-retrying .components-reconnect-repeated-attempt-visible,
+#components-reconnect-modal.components-reconnect-retrying .components-rejoining-animation,
+#components-reconnect-modal.components-reconnect-failed,
+#components-reconnect-modal.components-reconnect-failed .components-reconnect-failed-visible { display: block; }
+
+#components-reconnect-modal {
+    background: var(--card);
+    color: var(--texto);
+    width: 20rem;
+    max-width: calc(100vw - 2rem);
+    margin: 20vh auto;
+    padding: 2rem;
+    border: 0;
+    border-top: 4px solid var(--naranja);
+    border-radius: .5rem;
+    box-shadow: 0 3px 12px rgb(0 0 0 / .35);
+}
+#components-reconnect-modal::backdrop { background: rgb(0 0 0 / .45); }
+#components-reconnect-modal p { margin: 0; text-align: center; }
+
+.components-reconnect-container { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+
+.components-rejoining-animation { position: relative; width: 80px; height: 80px; }
+.components-rejoining-animation div {
+    position: absolute;
+    border: 3px solid var(--azul);
+    border-radius: 50%;
+    animation: components-rejoining-animation 1.5s cubic-bezier(0, .2, .8, 1) infinite;
+}
+.components-rejoining-animation div:nth-child(2) { animation-delay: -.5s; }
+
+@keyframes components-rejoining-animation {
+    0%, 4.9% { top: 40px; left: 40px; width: 0; height: 0; opacity: 0; }
+    5% { top: 40px; left: 40px; width: 0; height: 0; opacity: 1; }
+    100% { top: 0; left: 0; width: 80px; height: 80px; opacity: 0; }
+}
+
+/* Sin prerender, hasta que arranca el circuito <main> solo tiene los comentarios de Blazor: :empty ignora comentarios. */
+main:empty::before {
+    content: "";
+    display: block;
+    height: 12rem;
+    border-radius: .5rem;
+    background: linear-gradient(90deg, var(--borde) 25%, var(--hover) 37%, var(--borde) 63%);
+    background-size: 400% 100%;
+    animation: esq 1.4s ease infinite;
+}
+@media (prefers-reduced-motion: reduce) { main:empty::before { animation: none; } }
+
+/* Blazor deja "show" y "retrying" activas a la vez: durante los reintentos solo va el mensaje de reintento. */
+#components-reconnect-modal.components-reconnect-retrying .components-reconnect-first-attempt-visible { display: none; }
