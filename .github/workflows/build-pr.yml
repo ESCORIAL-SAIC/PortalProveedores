@@ -172,7 +172,10 @@ jobs:
             [ -e "$RUNNER_TEMP/out/$f" ] || { echo "❌ Falta $f en la publicación"; exit 1; }
           done
           # appsettings.json NO va (lo crea sistemas en el servidor, así actualizar no lo pisa).
-          [ ! -e "$RUNNER_TEMP/out/appsettings.json" ] || { echo "❌ appsettings.json no debe publicarse"; exit 1; }
+          # Tampoco la de desarrollo (rutas de /tmp): solo viaja appsettings.ejemplo.json.
+          for f in appsettings.json appsettings.Development.json; do
+            [ ! -e "$RUNNER_TEMP/out/$f" ] || { echo "❌ $f no debe publicarse"; exit 1; }
+          done
           (cd "$RUNNER_TEMP/out" && zip -qr "$GITHUB_WORKSPACE/artefacto/portal-proveedores-$version-win-x64.zip" .)
 
       - name: Datos de la compilación

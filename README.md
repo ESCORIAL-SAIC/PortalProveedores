@@ -46,7 +46,7 @@ Para actualizar:
 
 1. Descargar el zip de la release en GitHub.
 2. Crear `app_offline.htm` en la carpeta del sitio (IIS detiene la app sin reiniciar el servidor).
-3. Descomprimir encima. El zip **no incluye `appsettings.json`**, así que no pisa la configuración.
+3. Descomprimir encima. El zip **no incluye `appsettings.json`**, así que no pisa la configuración (solo trae `appsettings.ejemplo.json`).
 4. Borrar `app_offline.htm`.
 
 Sin HTTPS la clave del proveedor viaja en texto plano: poner certificado en el binding del sitio.
