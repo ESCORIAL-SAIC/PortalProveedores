@@ -7,13 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using PortalProveedores.Web;
 using PortalProveedores.Web.Components;
 
-// Corre los asserts de Pdf sin levantar el host: `dotnet run -- --self-check`.
-if (args.Contains("--self-check"))
-{
-    try { Pdf.SelfCheck(); return 0; }
-    catch (Exception ex) { Console.Error.WriteLine(ex.Message); return 1; }
-}
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
@@ -115,4 +108,3 @@ app.MapGet("/descargar/{tipo}/{numero}", async (
 }).RequireAuthorization();
 
 app.Run();
-return 0;
