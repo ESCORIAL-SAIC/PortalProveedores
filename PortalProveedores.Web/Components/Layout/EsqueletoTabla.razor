@@ -1,0 +1,11 @@
+<section class="card" role="status" aria-live="polite">
+    <span class="solo-lectores">Cargando…</span>
+    @for (var i = 0; i < Filas; i++)
+    {
+        <div class="esq esq-fila"></div>
+    }
+</section>
+
+@code {
+    [Parameter] public int Filas { get; set; } = 8;
+}

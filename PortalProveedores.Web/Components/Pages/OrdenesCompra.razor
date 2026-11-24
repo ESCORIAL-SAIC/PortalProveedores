@@ -1,0 +1,184 @@
+@page "/ordenes-compra"
+@attribute [Authorize]
+@rendermode Modos.SinPrerender
+@inherits PaginaProveedor
+
+<PageTitle>Portal Proveedores - Órdenes de Compra</PageTitle>
+
+<h1>Órdenes de compra pendientes</h1>
+
+<div class="filtros">
+    <div class="campo grow"><label for="buscar">Buscar</label><input id="buscar" placeholder="Buscar…" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" /></div>
+    <div class="campo"><label for="desde">Desde</label><input id="desde" type="date" @bind="desde" /></div>
+    <div class="campo"><label for="hasta">Hasta</label><input id="hasta" type="date" @bind="hasta" /></div>
+    <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
+    <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
+</div>
+
+@if (Cargando && ordenes.Count == 0)
+{
+    <EsqueletoTabla />
+}
+else if (ordenes.Count == 0)
+{
+    @if (!string.IsNullOrEmpty(busqueda) || desde is not null || hasta is not null)
+    {
+        <div class="card vacio-d">
+            <Icono Nombre="buscar" />
+            <p class="t">Ninguna orden de compra coincide con los filtros</p>
+            <p>Probá con otro rango de fechas o quitá los filtros.</p>
+            <button class="sec" @onclick="Limpiar">Limpiar filtros</button>
+        </div>
+    }
+    else
+    {
+        <p class="vacio">No hay órdenes de compra pendientes.</p>
+    }
+}
+else
+{
+    <section class="card tabla-wrap @(Cargando ? "recargando" : "")">
+    <table>
+        <thead>
+            <tr>
+                <th class="acciones"></th>
+                <th class="acciones"></th>
+                <th>Orden de compra</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in ordenes)
+            {
+                <tr class="@(expandida == o.Id ? "abierta" : null)">
+                    <td class="acciones">
+                        <button class="toggle" title="Ver items" aria-label="Ver items" aria-expanded="@(expandida == o.Id)" @onclick="() => Expandir(o)">
+                            <Icono Nombre="@(expandida == o.Id ? "menos" : "mas")" />
+                        </button>
+                    </td>
+                    <td class="acciones">
+                        @if (Pdf.NombreValido(o.NumeroDocumento))
+                        {
+                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs" aria-label="Descargar PDFs de @o.NumeroDocumento"><Icono Nombre="descargar" /></a>
+                        }
+                    </td>
+                    <td class="id">@o.Transaccion</td>
+                    <td>@o.NombreProveedor</td>
+                    <td>@o.FechaTransaccion</td>
+                </tr>
+                @if (expandida == o.Id)
+                {
+                    <tr class="items">
+                        <td colspan="5">
+                            @if (cargandoItems)
+                            {
+                                <p class="cargando">Cargando items…</p>
+                            }
+                            else if (items.Count == 0)
+                            {
+                                <p>Sin items pendientes.</p>
+                            }
+                            else
+                            {
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Descripción</th>
+                                            <th class="num">Cantidad pendiente</th>
+                                            <th>Fecha estimada</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var i in items)
+                                        {
+                                            <tr>
+                                                <td>@i.CodigoProducto</td>
+                                                <td>@i.DescripcionProducto</td>
+                                                <td class="num">@i.CantidadPendiente</td>
+                                                <td>@i.FechaEstimada</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <Paginador Pagina="pagina" Tamano="Tamano" Total="total" Deshabilitado="Cargando" OnCambio="IrAPagina" />
+    </section>
+}
+
+@code {
+    private const int Tamano = 50;
+    private List<OrdenCompra> ordenes = [];
+    private int total;
+    private List<ItemOrdenCompra> items = [];
+    private string busqueda = string.Empty;
+    private string? expandida;
+    private bool cargandoItems;
+
+    protected override async Task Cargar()
+    {
+        var r = await Api.OrdenesCompra(Proveedor,
+            new Consulta(busqueda, pagina, Tamano, Fecha(desde), Fecha(hasta)));
+        (ordenes, total) = (r.Items, r.Total);
+        expandida = null;
+        items = [];
+    }
+
+    // El RowDataBound de WebForms pedía los items de TODAS las filas al renderizar.
+    // Acá se piden solo al expandir: una llamada en vez de N.
+    private async Task Expandir(OrdenCompra o)
+    {
+        if (expandida == o.Id)
+        {
+            expandida = null;
+            items = [];
+            return;
+        }
+
+        expandida = o.Id;
+        items = [];
+        if (string.IsNullOrEmpty(o.Id))
+            return;
+
+        cargandoItems = true;
+        try
+        {
+            var cargados = await Api.ItemsOrdenCompra(o.Id);
+            // Otra fila pudo abrirse mientras esperábamos la respuesta.
+            if (expandida == o.Id)
+                items = cargados;
+        }
+        finally { cargandoItems = false; }
+    }
+
+    private static string? Fecha(DateOnly? d) => d?.ToString("yyyy-MM-dd");
+
+    private Task Buscar()
+    {
+        pagina = 1;
+        return Recargar();
+    }
+
+    private Task IrAPagina(int p)
+    {
+        pagina = p;
+        return Recargar();
+    }
+
+    private Task Limpiar()
+    {
+        busqueda = string.Empty;
+        desde = hasta = null;
+        return Buscar();
+    }
+
+    private Task EnterBusca(KeyboardEventArgs e) =>
+        e.Key == "Enter" ? Buscar() : Task.CompletedTask;
+}

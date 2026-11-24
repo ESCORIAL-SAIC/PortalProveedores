@@ -1,0 +1,114 @@
+@page "/facturas-pendientes"
+@attribute [Authorize]
+@rendermode Modos.SinPrerender
+@inherits PaginaProveedor
+
+<PageTitle>Portal Proveedores - Facturas Pendientes</PageTitle>
+
+<h1>Facturas pendientes</h1>
+
+<div class="filtros">
+    <div class="campo"><label for="desde">Vence desde</label><input id="desde" type="date" @bind="desde" /></div>
+    <div class="campo"><label for="hasta">Vence hasta</label><input id="hasta" type="date" @bind="hasta" /></div>
+    <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
+    <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
+</div>
+
+@if (Cargando && facturas.Count == 0)
+{
+    <EsqueletoTabla />
+}
+else if (facturas.Count == 0)
+{
+    @if (desde is not null || hasta is not null)
+    {
+        <div class="card vacio-d">
+            <Icono Nombre="buscar" />
+            <p class="t">Ninguna factura coincide con los filtros</p>
+            <p>Probá con otro rango de fechas o quitá los filtros.</p>
+            <button class="sec" @onclick="Limpiar">Limpiar filtros</button>
+        </div>
+    }
+    else
+    {
+        <p class="vacio">No hay facturas pendientes.</p>
+    }
+}
+else
+{
+    <section class="card tabla-wrap @(Cargando ? "recargando" : "")">
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Número factura</th>
+                <th>Tipo</th>
+                <th>Proveedor</th>
+                <th>Moneda</th>
+                <th class="num">Total</th>
+                <th class="num">Saldo</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th class="num">Saldo convertido</th>
+                <th class="num">Cotización</th>
+                <th>Actualización</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var f in facturas)
+            {
+                var (c, t) = Resumen.Estado(Resumen.Dias(f.FechaVencimiento, hoy));
+                <tr class="@c">
+                    <td>@f.FechaFactura</td>
+                    <td class="id">@f.NumeroFactura</td>
+                    <td class="aux">@f.TipoTransaccion</td>
+                    <td>@f.Proveedor</td>
+                    <td class="aux">@f.Moneda</td>
+                    <td class="num">@f.Total</td>
+                    <td class="num">@f.Saldo</td>
+                    <td>@f.FechaVencimiento</td>
+                    <td>@if (t != "") {<span class="badge @c">@t</span>}</td>
+                    <td class="num">@f.SaldoConvertido</td>
+                    <td class="num aux">@f.Cotizacion</td>
+                    <td class="aux">@f.FechaActualizacion</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <Paginador Pagina="pagina" Tamano="Tamano" Total="total" Deshabilitado="Cargando" OnCambio="IrAPagina" />
+    </section>
+}
+
+@code {
+    private const int Tamano = 50;
+    private List<FacturaPendiente> facturas = [];
+    private int total;
+    private readonly DateOnly hoy = Resumen.Hoy();
+
+    protected override async Task Cargar()
+    {
+        var r = await Api.FacturasPendientes(Proveedor,
+            new Consulta(Pagina: pagina, Tamano: Tamano, Desde: Fecha(desde), Hasta: Fecha(hasta)));
+        (facturas, total) = (r.Items, r.Total);
+    }
+
+    private static string? Fecha(DateOnly? d) => d?.ToString("yyyy-MM-dd");
+
+    private Task Buscar()
+    {
+        pagina = 1;
+        return Recargar();
+    }
+
+    private Task IrAPagina(int p)
+    {
+        pagina = p;
+        return Recargar();
+    }
+
+    private Task Limpiar()
+    {
+        desde = hasta = null;
+        return Buscar();
+    }
+}
