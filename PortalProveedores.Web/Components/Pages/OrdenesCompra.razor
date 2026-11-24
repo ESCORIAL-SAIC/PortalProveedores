@@ -3,16 +3,14 @@
 @rendermode Modos.SinPrerender
 @inherits PaginaProveedor
 
-<PageTitle>Portal Proveedores - Ordenes de Compra</PageTitle>
+<PageTitle>Portal Proveedores - Órdenes de Compra</PageTitle>
 
 <h1>Órdenes de compra pendientes</h1>
 
 <div class="filtros">
-    <input id="buscar" placeholder="Buscar…" aria-label="Buscar" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" />
-    <label for="desde">Desde</label>
-    <input id="desde" type="date" @bind="desde" />
-    <label for="hasta">Hasta</label>
-    <input id="hasta" type="date" @bind="hasta" />
+    <div class="campo grow"><label for="buscar">Buscar</label><input id="buscar" placeholder="Buscar…" @bind="busqueda" @bind:event="oninput" @onkeyup="EnterBusca" /></div>
+    <div class="campo"><label for="desde">Desde</label><input id="desde" type="date" @bind="desde" /></div>
+    <div class="campo"><label for="hasta">Hasta</label><input id="hasta" type="date" @bind="hasta" /></div>
     <button class="@(Cargando ? "ocupado" : null)" @onclick="Buscar" disabled="@Cargando">Buscar</button>
     <button class="sec" @onclick="Limpiar" disabled="@Cargando">Limpiar filtros</button>
 </div>
@@ -23,7 +21,19 @@
 }
 else if (ordenes.Count == 0)
 {
-    <p class="vacio">No hay órdenes de compra pendientes.</p>
+    @if (!string.IsNullOrEmpty(busqueda) || desde is not null || hasta is not null)
+    {
+        <div class="card vacio-d">
+            <Icono Nombre="buscar" />
+            <p class="t">Ninguna orden de compra coincide con los filtros</p>
+            <p>Probá con otro rango de fechas o quitá los filtros.</p>
+            <button class="sec" @onclick="Limpiar">Limpiar filtros</button>
+        </div>
+    }
+    else
+    {
+        <p class="vacio">No hay órdenes de compra pendientes.</p>
+    }
 }
 else
 {
@@ -41,19 +51,19 @@ else
         <tbody>
             @foreach (var o in ordenes)
             {
-                <tr>
+                <tr class="@(expandida == o.Id ? "abierta" : null)">
                     <td class="acciones">
-                        <button class="toggle" title="Ver items" aria-label="Ver items" @onclick="() => Expandir(o)">
+                        <button class="toggle" title="Ver items" aria-label="Ver items" aria-expanded="@(expandida == o.Id)" @onclick="() => Expandir(o)">
                             <Icono Nombre="@(expandida == o.Id ? "menos" : "mas")" />
                         </button>
                     </td>
                     <td class="acciones">
                         @if (Pdf.NombreValido(o.NumeroDocumento))
                         {
-                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs" aria-label="Descargar PDFs"><Icono Nombre="descargar" /></a>
+                            <a class="descargar" data-enhance-nav="false" href="/descargar/ordencompra/@o.NumeroDocumento" title="Descargar PDFs" aria-label="Descargar PDFs de @o.NumeroDocumento"><Icono Nombre="descargar" /></a>
                         }
                     </td>
-                    <td>@o.Transaccion</td>
+                    <td class="id">@o.Transaccion</td>
                     <td>@o.NombreProveedor</td>
                     <td>@o.FechaTransaccion</td>
                 </tr>

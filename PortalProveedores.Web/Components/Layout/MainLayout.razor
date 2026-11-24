@@ -21,13 +21,24 @@
             <header class="topbar">
                 <label for="nav-toggle" class="hamburguesa" title="Menú"><Icono Nombre="menu" /></label>
                 <span class="espacio"></span>
-                <span class="usuario"><Icono Nombre="usuario" /> @context.User.Identity?.Name</span>
+                @{ var nombre = context.User.Identity?.Name; }
+                <span class="usuario">
+                    <span class="avatar" aria-hidden="true">
+                        @if (string.IsNullOrEmpty(nombre)) { <Icono Nombre="usuario" /> } else { @char.ToUpperInvariant(nombre[0]) }
+                    </span>
+                    <span class="nombre">@nombre</span>
+                </span>
                 <form method="post" action="/auth/logout">
                     <AntiforgeryToken />
                     <button type="submit" class="link"><Icono Nombre="salir" /> Salir</button>
                 </form>
             </header>
             <main>@Body</main>
+            <footer class="pie">
+                <span>Portal Proveedores de Escorial</span>
+                <span class="espacio"></span>
+                @if (Version is not null) { <span>Versión @Version</span> }
+            </footer>
         </div>
     </Authorized>
     <NotAuthorized>
@@ -36,3 +47,17 @@
         </div>
     </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    // InformationalVersion trae "X.Y.Z+sha": se corta el sufijo. 1.0.0 es compilación de desarrollo.
+    private static readonly string? Version = LeeVersion();
+
+    private static string? LeeVersion()
+    {
+        var v = typeof(MainLayout).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion?.Split('+')[0];
+        return string.IsNullOrEmpty(v) || v == "1.0.0" ? null : v;
+    }
+}

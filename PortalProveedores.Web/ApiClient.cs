@@ -5,7 +5,7 @@ namespace PortalProveedores.Web;
 
 // DTOs: nombres de propiedad copiados tal cual del proyecto WebForms para no tocar
 // el contrato JSON de la API. Todo string, igual que antes.
-public sealed record LoginResult(string? Proveedor);
+public sealed record LoginResult(string? Proveedor, string? Nombre);
 
 public sealed class OrdenCompra
 {

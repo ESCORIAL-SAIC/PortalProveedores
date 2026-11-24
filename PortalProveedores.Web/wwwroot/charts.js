@@ -6,13 +6,17 @@ window.portalCharts = {
         const el = document.getElementById(id);
         if (!el) return;
         this._inst[id]?.destroy();
-        const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
-        const texto = oscuro ? '#9aa4ad' : '#666';
-        const grilla = oscuro ? '#2e353d' : '#e6e6e6';
+        const css = getComputedStyle(document.documentElement);
+        const v = n => css.getPropertyValue(n).trim();
+        const texto = v('--suave');
+        const grilla = v('--borde');
+        // colores: hex o nombre de estado (venc, warn, azul, gris) -> --g-<nombre>.
+        const pinta = c => c.startsWith('#') ? c : v('--g-' + c);
+        const fondo = Array.isArray(colores) ? colores.map(pinta) : pinta(colores);
         const circular = tipo === 'doughnut';
         this._inst[id] = new Chart(el, {
             type: tipo,
-            data: { labels: etiquetas, datasets: [{ label: titulo, data: datos, backgroundColor: colores, borderRadius: circular ? 0 : 4 }] },
+            data: { labels: etiquetas, datasets: [{ label: titulo, data: datos, backgroundColor: fondo, borderColor: v('--card'), borderWidth: 2, borderRadius: circular ? 0 : 4 }] },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,

@@ -55,7 +55,7 @@ app.MapPost("/auth/login", async (
         return Results.Redirect("/login?error=1");
 
     var identity = new ClaimsIdentity(
-        [new Claim("Proveedor", proveedor), new Claim(ClaimTypes.Name, user ?? proveedor)],
+        [new Claim("Proveedor", proveedor), new Claim(ClaimTypes.Name, login.Nombre is { Length: > 0 } n ? n : user ?? proveedor)],
         CookieAuthenticationDefaults.AuthenticationScheme);
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
         new ClaimsPrincipal(identity));

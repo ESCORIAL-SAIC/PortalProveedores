@@ -30,19 +30,33 @@
 }
 else if (resumen is null)
 {
-    <p class="error">No se pudo obtener el resumen. Intentá de nuevo en un momento.</p>
+    <div class="card aviso-err" role="alert">
+        <Icono Nombre="alerta" />
+        <div>
+            <p class="t">No pudimos cargar el resumen</p>
+            <p>Probá de nuevo en unos segundos.</p>
+        </div>
+        <button @onclick="Recargar">Reintentar</button>
+    </div>
 }
 else
 {
     <div class="kpis">
-        <KpiCard Href="ordenes-compra" Color="azul" Icon="oc" Titulo="OC pendientes"
-                 Valor="@resumen.OcPendientes.ToString()" />
-        <KpiCard Href="facturas-pendientes" Color="verde" Icon="factura" Titulo="Facturas abiertas"
-                 Valor="@resumen.FacturasAbiertas.ToString()" Nota="@("Saldo " + Resumen.Moneda(resumen.SaldoTotal))" />
-        <KpiCard Href="@UrlFacturas(0)" Color="rojo" Icon="alerta" Titulo="Facturas vencidas"
-                 Valor="@resumen.FacturasVencidas.ToString()" />
+        @if (resumen.FacturasVencidas > 0)
+        {
+            <KpiCard Href="@UrlFacturas(0)" Color="rojo" Icon="alerta" Titulo="Facturas vencidas"
+                     Valor="@resumen.FacturasVencidas.ToString()" Nota="Ver facturas vencidas" />
+        }
+        else
+        {
+            <KpiCard Href="@UrlFacturas(0)" Color="rojo cero" Icon="ok" Titulo="Facturas vencidas" Valor="0" />
+        }
         <KpiCard Href="@UrlFacturas(1)" Color="naranja" Icon="alerta" Titulo="Vencen en 7 días"
                  Valor="@resumen.FacturasPorVencer7.ToString()" />
+        <KpiCard Href="facturas-pendientes" Color="verde" Icon="factura" Titulo="Facturas abiertas"
+                 Valor="@resumen.FacturasAbiertas.ToString()" Nota="@("Saldo " + Resumen.Moneda(resumen.SaldoTotal))" />
+        <KpiCard Href="ordenes-compra" Color="azul" Icon="oc" Titulo="OC pendientes"
+                 Valor="@resumen.OcPendientes.ToString()" />
     </div>
 
     <div class="graficos">
@@ -73,8 +87,8 @@ else
                         @foreach (var a in alertas)
                         {
                             var (clase, texto) = Resumen.Estado(a.Dias);
-                            <tr>
-                                <td>@a.Numero</td>
+                            <tr class="@clase">
+                                <td class="id">@a.Numero</td>
                                 <td>@a.Vence</td>
                                 <td><span class="badge @clase">@texto</span></td>
                                 <td class="num">@a.Saldo</td>
@@ -136,7 +150,7 @@ else
 
         var despues = Math.Max(0, resumen.FacturasAbiertas - resumen.FacturasVencidas
             - resumen.FacturasPorVencer7 - resumen.FacturasSinVencimiento);
-        string[] colores = ["#e3001b", "#eb9233", "#0072b9", "#888888"];
+        string[] colores = ["venc", "warn", "azul", "gris"];
         await JS.InvokeVoidAsync("portalCharts.dibujar", "g-venc", "doughnut",
             new[] { "Vencidas", "Vencen en 7 días", "Más adelante", "Sin vencimiento" },
             new long[] { resumen.FacturasVencidas, resumen.FacturasPorVencer7, despues, resumen.FacturasSinVencimiento },
@@ -146,7 +160,7 @@ else
         await JS.InvokeVoidAsync("portalCharts.dibujar", "g-pagos", "bar",
             resumen.PagosUltimos6Meses.Select(m => Resumen.Mes(m.Mes)).ToArray(),
             resumen.PagosUltimos6Meses.Select(m => m.Cantidad).ToArray(),
-            "#0072b9", "Órdenes de pago", yo,
+            "azul", "Órdenes de pago", yo,
             resumen.PagosUltimos6Meses.Select(m => m.Cantidad > 0).ToArray());
     }
 
