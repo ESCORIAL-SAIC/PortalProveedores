@@ -50,3 +50,14 @@ Para actualizar:
 4. Borrar `app_offline.htm`.
 
 Sin HTTPS la clave del proveedor viaja en texto plano: poner certificado en el binding del sitio.
+
+## Despliegue automático
+
+Al publicarse una release **estable** (PR `dev` -> `main`), el job `desplegar` de `publicar.yml` corre en un
+runner propio del servidor (etiqueta `iis-portal`) y ejecuta `C:\deploy\desplegar-portal.ps1`. Ese script vive
+en el servidor, no en el repo. Baja el zip de la release, lo prueba aparte, cambia el sitio de IIS sin corte y
+vuelve a la versión anterior si falla. Los rc no despliegan.
+La configuración (`ApiUrl`, rutas de PDF) queda en el servidor, en `C:\deploy\appsettings.portal.json`.
+
+El runner ejecuta código con privilegios altos: exigir aprobación de workflows de colaboradores externos
+(Settings > Actions > General) y no usar la etiqueta `iis-portal` en otros workflows.
